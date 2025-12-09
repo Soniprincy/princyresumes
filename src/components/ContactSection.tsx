@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+// import { supabase } from "@/integrations/supabase/client";
 
 const ContactSection = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,31 +17,55 @@ const ContactSection = () => {
   });
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('send-contact-email', {
-        body: {
-          name: formData.name,
-          email: formData.email,
-          message: formData.message,
-        },
+      const form = e.currentTarget;
+      const formDataWeb3 = new FormData(form);
+
+      // Web3Forms access key
+      formDataWeb3.append(
+        "access_key",
+        "4b590293-7d42-4c77-9f38-9c7797578edb"
+      );
+
+      // Optional: better subject in the email
+      formDataWeb3.append(
+        "subject",
+        `New message from ${formData.name} via portfolio`
+      );
+
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        body: formDataWeb3,
       });
 
-      if (error) throw error;
+      const result = await response.json();
 
-      toast({
-        title: "Message sent!",
-        description: "Thank you for reaching out. I'll get back to you soon!",
-      });
-      setFormData({ name: "", email: "", message: "" });
+      if (result.success) {
+        toast({
+          title: "Message sent!",
+          description:
+            "Thank you for reaching out. I'll get back to you soon!",
+        });
+        setFormData({ name: "", email: "", message: "" });
+        form.reset();
+      } else {
+        toast({
+          title: "Failed to send message",
+          description:
+            "Please try again or email me directly at soniprincy02@gmail.com",
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
       console.error("Error sending message:", error);
       toast({
         title: "Failed to send message",
-        description: "Please try again or email me directly at soniprincy02@gmail.com",
+        description:
+          "Please try again or email me directly at soniprincy02@gmail.com",
         variant: "destructive",
       });
     } finally {
@@ -94,7 +118,8 @@ const ContactSection = () => {
           </h2>
           <div className="w-20 h-1 bg-gradient-to-r from-primary to-purple rounded-full mx-auto" />
           <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
-            I'd love to hear from you! Whether you have a project in mind or just want to say hello.
+            I'd love to hear from you! Whether you have a project in mind or
+            just want to say hello.
           </p>
         </div>
 
@@ -115,18 +140,24 @@ const ContactSection = () => {
                       <info.icon className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">{info.label}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {info.label}
+                      </p>
                       {info.href ? (
                         <a
                           href={info.href}
-                          target={info.href.startsWith("mailto") ? undefined : "_blank"}
+                          target={
+                            info.href.startsWith("mailto") ? undefined : "_blank"
+                          }
                           rel="noopener noreferrer"
                           className="text-foreground font-medium hover:text-primary transition-colors"
                         >
                           {info.value}
                         </a>
                       ) : (
-                        <p className="text-foreground font-medium">{info.value}</p>
+                        <p className="text-foreground font-medium">
+                          {info.value}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -194,7 +225,7 @@ const ContactSection = () => {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Opening Email...
+                      Sending...
                     </>
                   ) : (
                     <>
